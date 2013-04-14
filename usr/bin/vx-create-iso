@@ -1,0 +1,337 @@
+#!/bin/bash
+
+# Permissions: root:root 700
+# author = 'Alberto Gacias'
+# Based in https://help.ubuntu.com/community/LiveCDCustomization
+# Based in http://www.sindominio.net/suburbia/spip.php?article199
+
+
+function create-conf(){
+    cat >> $_FILE_CONF <<EOF
+_PRODUCT='vitalinux 0.1'
+_UBIQUITY_CUSTOM_PACKAGE="vx-ubiquity"
+_METAPACKAGE="vitalinux"
+_MIGASFREE_SERVER="155.210.12.49"
+_MIGASFREE_VERSION="VX-1"
+_MIGASFREE_REPO_BASE="VX-BASE"
+_MIGASFREE_TAGS=""
+EOF
+}
+
+
+
+function chroot_script(){
+    # Generate de script to run in chroot
+    local _FILE=$_DEST/custom/$_SCRIPT
+    echo $_FILE
+    cat >> $_FILE <<EOF
+#!/bin/bash
+
+export HOME=/root
+export LC_ALL=C
+
+
+# ===============================
+# RESYNCHRONIZE THE PACKAGE INDEX
+# ===============================
+apt-get update
+
+
+# ===========================
+# INSTALL VX-MIGASFREE-CLIENT
+# ===========================
+apt-get --assume-yes --force-yes install vx-migasfree-client
+
+
+# ====================
+# ASSIGN COMPUTER TAGS
+# ====================
+migasfree-tags $_MIGASFREE_TAGS
+
+
+# ============
+# UPDATE
+# ============
+migasfree -u
+
+
+# ==================
+# CUSTOMIZE UBIQUITY
+# ==================
+apt-get --assume-yes --force-yes install $_UBIQUITY_CUSTOM_PACKAGE
+
+
+# =================
+# UNINSTALL KERNELS
+# =================
+dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | xargs apt-get --assume-yes --force-yes purge
+
+
+# =====
+# CLEAN
+# =====
+apt-get clean
+rm -rf /tmp/* || :
+rm -f /etc/hosts /etc/resolv.conf || :
+
+
+# =========
+# FIRSTBOOT
+# =========
+cat >> /etc/init/firstboot.conf <<EOFFIRSTBOOT
+start on filesystem and net-device-up IFACE!=lo
+
+env USER=root
+console output
+
+script
+    # ASSING DEFAULT TAGS
+    migasfree-tags $_MIGASFREE_TAGS
+
+end script
+
+post-stop script
+    rm /etc/init/firstboot.conf
+end script
+EOFFIRSTBOOT
+chmod 700 /etc/init/firstboot.conf
+
+EOF
+
+    chmod 700 $_FILE
+
+}
+
+
+function copyfiles(){
+
+    # MOUNT SOURCE ISO
+    mkdir -p $_TMP
+    mount -o loop ./$_SRC $_TMP
+
+    # COPY TO TARGET
+    mkdir -p $_DEST/cd
+    echo "Copying files. This will take a while. Be patient."
+    rsync --exclude=/casper/filesystem.squashfs -a $_TMP/ $_DEST/cd
+
+    # COPY squashfs to TARGET (custom)
+    mkdir -p $_DEST/squashfs
+    mkdir -p $_DEST/custom
+    modprobe squashfs
+    mount -t squashfs -o loop $_TMP/casper/filesystem.squashfs $_DEST/squashfs/
+    cp -a $_DEST/squashfs/* $_DEST/custom
+    umount $_DEST/squashfs/
+
+    # UMOUNT SOURCE ISO
+    umount $_TMP
+
+}
+
+
+function customize_casper(){
+    local _PWD=`pwd`
+    # Extract initrd.lz
+    cd $_DEST/cd/casper
+    mkdir lztempdir
+    cd lztempdir
+    lzma -dc -S .lz ../initrd.lz | cpio -imvd --no-absolute-filenames
+
+    rm lib/plymouth/themes/text.plymouth
+    cp lib/plymouth/themes/ubuntu-text/ubuntu-text.plymouth lib/plymouth/themes/text.plymouth
+
+    # Modify 'Ubuntu 12.04' string text.plymouth
+    _STR="s/Ubuntu 12.04/$_PRODUCT/g"
+    sed -i "$_STR" lib/plymouth/themes/text.plymouth
+
+    # Compress initrd.lz
+    rm ../initrd.lz
+    find . | cpio --quiet --dereference -o -H newc | lzma -7 > ../initrd.lz
+    cd ..
+
+    rm -rf lztempdir
+
+    cd $_PWD
+
+}
+
+
+#CHECK ROOT USER
+if ! [ "$UID" = "0" ]; then
+    echo "This script must run as root"
+    exit 1
+fi
+
+# CONFIGURATION
+_FILE_CONF=/etc/vx-create-iso.conf
+if ! [ -f $_FILE_CONF ] ; then
+  create-conf
+  echo "Created $_FILE_CONF and you must configure it. Please assign the tags."
+  exit 0
+fi
+. /etc/vx-create-iso.conf
+
+
+_DIR="$( realpath $( dirname "${BASH_SOURCE[0]}" ))"
+_SRC=ubuntu-12.04-desktop-i386.iso
+_DATE=`date +%Y%m%d`
+_DEST=/tmp/CD
+_TMP=/tmp/livecd
+_CST=./custom
+_SCRIPT=script_chroot.sh
+
+# To lower case and replace spaces
+_product=`echo "$_PRODUCT" |sed -e 's/\(.*\)/\L\1/'| sed 's/ /-/g'`
+
+
+
+# Check link to ubuntu iso
+_SRC=`ls $_SRC` || :
+if [ -z "$_SRC" ] ; then
+  _ISO=$(zenity --file-selection --title="Where is ubuntu-12.04-.iso file?" --file-filter=ubuntu*.iso --confirm-overwrite)
+  if ! [ -z "$_ISO" ] ; then
+    _SRC=`basename $_ISO`
+    ln -s $_ISO $_SRC
+  fi
+fi
+
+
+if ! [ -d $_DEST/squashfs ] ; then
+  copyfiles
+fi
+
+# Customize casper
+customize_casper
+
+
+# Copy resolv.conf y hosts al DESTINO (custom/etc)
+cp /etc/resolv.conf /etc/hosts $_DEST/custom/etc/
+
+# Create default sources.list
+rm $_DEST/custom/etc/apt/sources.list
+cat >> $_DEST/custom/etc/apt/sources.list<<EOF
+deb http://es.archive.ubuntu.com/ubuntu/ precise main restricted
+deb http://security.ubuntu.com/ubuntu/ precise-security main restricted
+deb http://archive.ubuntu.com/ubuntu/ precise-updates main restricted
+
+
+deb http://es.archive.ubuntu.com/ubuntu/ precise universe
+deb http://es.archive.ubuntu.com/ubuntu/ precise-security universe
+
+# This repository must not exist #FIXME
+deb http://es.archive.ubuntu.com/ubuntu/ precise multiverse
+
+EOF
+
+# Config initital repository
+echo "deb http://$_MIGASFREE_SERVER/repo/$_MIGASFREE_VERSION/REPOSITORIES $_MIGASFREE_REPO_BASE PKGS" > $_DEST/custom/etc/apt/sources.list.d/migasfree.list
+
+# Create chroot script
+chroot_script
+
+mount --bind /dev/ $_DEST/custom/dev
+mount --bind /proc $_DEST/custom/proc
+mount --bind /sys $_DEST/custom/sys
+mount --bind /dev/pts $_DEST/custom/dev/pts
+
+chroot $_DEST/custom /$_SCRIPT "$_UBIQUITY_CUSTOM_PACKAGE $_METAPACKAGE"
+
+umount -lf $_DEST/custom/dev/pts
+umount -lf $_DEST/custom/sys
+umount -lf $_DEST/custom/proc
+umount -lf $_DEST/custom/dev
+
+
+rm $_DEST/custom/$_SCRIPT
+
+# Ubiquity preselect
+
+cat > $_DEST/cd/preseed/ubuntu.seed << EOF
+# Enable extras.ubuntu.com.
+d-i apt-setup/extras    boolean true
+# Install the Ubuntu desktop.
+tasksel tasksel/first   multiselect ubuntu-desktop
+# On live DVDs, don't spend huge amounts of time removing substantial
+# application packages pulled in by language packs. Given that we clearly
+# have the space to include them on the DVD, they're useful and we might as
+# well keep them installed.
+ubiquity    ubiquity/keep-installed string icedtea6-plugin openoffice.org
+
+debconf debconf/language string es
+d-i debian-installer/locale string es_ES.UTF-8
+d-i clock-setup/utc boolean false
+d-i time/zone string Europe/Madrid
+d-i console-setup/modelcode string pc105
+d-i console-setup/layoutcode string es
+
+ubiquity languagechooser/language-name-fb select Spanish
+ubiquity languagechooser/language-name select Spanish
+ubiquity languagechooser/language-name-ascii select Spanish
+ubiquity countrychooser/shortlist select ES
+ubiquity countrychooser/countryname select Spain
+ubiquity countrychooser/country-name string Spain
+ubiquity console-keymaps-at/keymap select es
+ubiquity localechooser/supported-locales multiselect es_ES.UTF-8
+ubiquity tzconfig/gmt boolean false
+ubiquity time/zone select Europe/Madrid
+
+console-setup console-setup/variant select Spain
+console-setup console-setup/layout select Spain
+EOF
+
+
+
+
+# Recreate the manifest files:
+chmod +w $_DEST/cd/casper/filesystem.manifest
+chroot $_DEST/custom dpkg-query -W --showformat='${Package} ${Version}\n' > $_DEST/cd/casper/filesystem.manifest
+cp $_DEST/cd/casper/filesystem.manifest $_DEST/cd/casper/filesystem.manifest-desktop
+
+# Once you install the system, we must delete ubiquity
+echo "$_UBIQUITY_CUSTOM_PACKAGE" >> $_DEST/cd/casper/filesystem.manifest-remove
+
+
+# Isolinux read this file
+cat > $_DEST/cd/README.diskdefines << EOF
+#define DISKNAME  $_PRODUCT - Release i386
+#define TYPE  binary
+#define TYPEbinary  1
+#define ARCH  i386
+#define ARCHi386  1
+#define DISKNUM  1
+#define DISKNUM1  1
+#define TOTALNUM  0
+#define TOTALNUM0  1
+EOF
+
+
+
+# Ubiquity read this file for buttoms "Try" an "Install"
+echo "$_PRODUCT - Release i386 ($_DATE)" > $_DEST/cd/.disk/info
+
+
+# Create the squashfs file:
+mksquashfs $_DEST/custom $_DEST/cd/casper/filesystem.squashfs -processors 1
+
+
+# Create ISO
+if [ -f $_product.iso ] ; then
+  rm $_product.iso
+fi
+rm $_DEST/cd/md5sum.txt
+cd $_DEST/cd
+
+_TARGET=`realpath $_DIR/$_SRC`
+_TARGET=`dirname $_TARGET`
+mkisofs -r -V "$_product" -b isolinux/isolinux.bin -c isolinux/boot.cat -cache-inodes -J -l -no-emul-boot -boot-load-size 4 -boot-info-table -o $_TARGET/$_product.iso .
+
+# Remove work directory
+rm -rf $_DEST
+
+echo
+echo
+if [ -f $_TARGET/$_product.iso ] ; then
+    echo "CREATED $_TARGET/$_product.iso"
+    ls -la $_TARGET/$_product.iso
+else
+    echo "ERROR: NOT CREATED $_TARGET/$_product.iso"
+fi

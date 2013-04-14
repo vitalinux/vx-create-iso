@@ -1,0 +1,13 @@
+Source: vx-create-iso
+Section: utils
+Priority: extra
+Maintainer: agm <alberto@migasfree.org>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+Homepage: http://github.com/vitalinux/vx-create-iso
+
+Package: vx-create-iso
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, squashfs-tools, realpath
+Description: Create a Live Vitalinux iso DVD
+ Create a Live Vitalinux iso DVD (with flavour)
