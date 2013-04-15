@@ -6,20 +6,6 @@
 # Based in http://www.sindominio.net/suburbia/spip.php?article199
 
 
-function create-conf(){
-    cat >> $_FILE_CONF <<EOF
-_PRODUCT='vitalinux 0.1'
-_UBIQUITY_CUSTOM_PACKAGE="vx-ubiquity"
-_METAPACKAGE="vitalinux"
-_MIGASFREE_SERVER="155.210.12.49"
-_MIGASFREE_VERSION="VX-1"
-_MIGASFREE_REPO_BASE="VX-BASE"
-_MIGASFREE_TAGS=""
-EOF
-}
-
-
-
 function chroot_script(){
     # Generate de script to run in chroot
     local _FILE=$_DEST/custom/$_SCRIPT
@@ -46,7 +32,7 @@ apt-get --assume-yes --force-yes install vx-migasfree-client
 # ====================
 # ASSIGN COMPUTER TAGS
 # ====================
-migasfree-tags $_MIGASFREE_TAGS
+migasfree-tags $MIGASFREE_TAGS
 
 
 # ============
@@ -58,7 +44,7 @@ migasfree -u
 # ==================
 # CUSTOMIZE UBIQUITY
 # ==================
-apt-get --assume-yes --force-yes install $_UBIQUITY_CUSTOM_PACKAGE
+apt-get --assume-yes --force-yes install $UBIQUITY_CUSTOM_PACKAGE
 
 
 # =================
@@ -86,7 +72,7 @@ console output
 
 script
     # ASSING DEFAULT TAGS
-    migasfree-tags $_MIGASFREE_TAGS
+    migasfree-tags $MIGASFREE_TAGS
 
 end script
 
@@ -140,7 +126,7 @@ function customize_casper(){
     cp lib/plymouth/themes/ubuntu-text/ubuntu-text.plymouth lib/plymouth/themes/text.plymouth
 
     # Modify 'Ubuntu 12.04' string text.plymouth
-    _STR="s/Ubuntu 12.04/$_PRODUCT/g"
+    _STR="s/Ubuntu 12.04/$PRODUCT/g"
     sed -i "$_STR" lib/plymouth/themes/text.plymouth
 
     # Compress initrd.lz
@@ -155,21 +141,14 @@ function customize_casper(){
 }
 
 
-#CHECK ROOT USER
+# CHECK ROOT USER
 if ! [ "$UID" = "0" ]; then
     echo "This script must run as root"
     exit 1
 fi
 
-# CONFIGURATION
-_FILE_CONF=/etc/vx-create-iso.conf
-if ! [ -f $_FILE_CONF ] ; then
-  create-conf
-  echo "Created $_FILE_CONF and you must configure it. Please assign the tags."
-  exit 0
-fi
+# READ CONFIGURATION
 . /etc/vx-create-iso.conf
-
 
 _DIR="$( realpath $( dirname "${BASH_SOURCE[0]}" ))"
 _SRC=ubuntu-12.04-desktop-i386.iso
@@ -180,7 +159,7 @@ _CST=./custom
 _SCRIPT=script_chroot.sh
 
 # To lower case and replace spaces
-_product=`echo "$_PRODUCT" |sed -e 's/\(.*\)/\L\1/'| sed 's/ /-/g'`
+_product=`echo "$PRODUCT" |sed -e 's/\(.*\)/\L\1/'| sed 's/ /-/g'`
 
 
 
@@ -223,7 +202,7 @@ deb http://es.archive.ubuntu.com/ubuntu/ precise multiverse
 EOF
 
 # Config initital repository
-echo "deb http://$_MIGASFREE_SERVER/repo/$_MIGASFREE_VERSION/REPOSITORIES $_MIGASFREE_REPO_BASE PKGS" > $_DEST/custom/etc/apt/sources.list.d/migasfree.list
+echo "deb http://$MIGASFREE_SERVER/repo/$MIGASFREE_VERSION/REPOSITORIES $MIGASFREE_REPO_BASE PKGS" > $_DEST/custom/etc/apt/sources.list.d/migasfree.list
 
 # Create chroot script
 chroot_script
@@ -233,7 +212,7 @@ mount --bind /proc $_DEST/custom/proc
 mount --bind /sys $_DEST/custom/sys
 mount --bind /dev/pts $_DEST/custom/dev/pts
 
-chroot $_DEST/custom /$_SCRIPT "$_UBIQUITY_CUSTOM_PACKAGE $_METAPACKAGE"
+chroot $_DEST/custom /$_SCRIPT "$UBIQUITY_CUSTOM_PACKAGE $METAPACKAGE"
 
 umount -lf $_DEST/custom/dev/pts
 umount -lf $_DEST/custom/sys
@@ -287,12 +266,12 @@ chroot $_DEST/custom dpkg-query -W --showformat='${Package} ${Version}\n' > $_DE
 cp $_DEST/cd/casper/filesystem.manifest $_DEST/cd/casper/filesystem.manifest-desktop
 
 # Once you install the system, we must delete ubiquity
-echo "$_UBIQUITY_CUSTOM_PACKAGE" >> $_DEST/cd/casper/filesystem.manifest-remove
+echo "$UBIQUITY_CUSTOM_PACKAGE" >> $_DEST/cd/casper/filesystem.manifest-remove
 
 
 # Isolinux read this file
 cat > $_DEST/cd/README.diskdefines << EOF
-#define DISKNAME  $_PRODUCT - Release i386
+#define DISKNAME  $PRODUCT - Release i386
 #define TYPE  binary
 #define TYPEbinary  1
 #define ARCH  i386
@@ -306,7 +285,7 @@ EOF
 
 
 # Ubiquity read this file for buttoms "Try" an "Install"
-echo "$_PRODUCT - Release i386 ($_DATE)" > $_DEST/cd/.disk/info
+echo "$PRODUCT - Release i386 ($_DATE)" > $_DEST/cd/.disk/info
 
 
 # Create the squashfs file:
