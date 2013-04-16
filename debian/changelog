@@ -1,5 +1,15 @@
+vx-create-iso (1.0-2) unstable; urgency=low
+
+  * Added file /etc/vx-create-iso.conf and rename variables
+  * Remove language packs expect en & es
+  * Uninstall Kernel not used in firstrun
+  * Added a second update
+  * Added manpages
+
+ -- Alberto Gacias <alberto@migasfree.org>  Tue, 16 Apr 2013 18:56:06 +0200
+
 vx-create-iso (1.0-1) unstable; urgency=low
 
   * First version of package
 
- -- agm <alberto@migasfree.org>  Sat, 13 Apr 2013 11:11:06 +0200
+ -- Alberto Gacias <alberto@migasfree.org>  Sat, 13 Apr 2013 11:11:06 +0200
