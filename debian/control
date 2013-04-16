@@ -2,7 +2,7 @@ Source: vx-create-iso
 Section: utils
 Priority: extra
 Maintainer: agm <alberto@migasfree.org>
-Build-Depends: debhelper (>= 8.0.0)
+Build-Depends: debhelper (>= 8.0.0), pandoc
 Standards-Version: 3.9.3
 Homepage: http://github.com/vitalinux/vx-create-iso
 

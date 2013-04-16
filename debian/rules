@@ -10,4 +10,10 @@
 #export DH_VERBOSE=1
 
 %:
-	dh $@ 
+	dh $@
+
+override_dh_auto_build:
+	pandoc -s -r markdown -w man debian/vx-create-iso.1.md -o debian/vx-create-iso.1
+	pandoc -s -r markdown -w man debian/vx-create-iso.conf.5.md -o debian/vx-create-iso.conf.5
+	pandoc -s -r markdown -w man debian/vx-create-iso.es.1.md -o debian/vx-create-iso.es.1
+	dh_auto_build
