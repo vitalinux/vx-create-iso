@@ -23,6 +23,13 @@ export LC_ALL=C
 apt-get update
 
 
+# ===================================
+# REMOVE LANGUAGE-PACK EXCEPT en & es
+# ===================================
+_REMOVE=`dpkg-query -W --showformat='${Package}\n' | grep language-pack | egrep -v '\-en|\-es'`
+apt-get --assume-yes --force-yes purge $_REMOVE
+
+
 # ===========================
 # INSTALL VX-MIGASFREE-CLIENT
 # ===========================
