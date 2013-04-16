@@ -217,6 +217,8 @@ mount --bind /sys $_DEST/custom/sys
 mount --bind /dev/pts $_DEST/custom/dev/pts
 
 chroot $_DEST/custom /$_SCRIPT "$UBIQUITY_CUSTOM_PACKAGE $METAPACKAGE"
+chroot $_DEST/custom /usr/bin/migasfree -u
+
 
 umount -lf $_DEST/custom/dev/pts
 umount -lf $_DEST/custom/sys
