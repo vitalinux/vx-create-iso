@@ -10,16 +10,16 @@ vx-create-iso - Genera un iso de vitalinux
 
 SINOPSIS
 ========
-vx-create-iso Genera un iso de vitalinux (LiveDVD) de un determinado sabor o conjunto de sabores definidos en el servidor migasfree de vitalinux.
+vx-create-iso Genera un iso de vitalinux (LiveDVD) de un determinado sabor o conjunto de sabores.
 
 
 DESCRIPCIÓN
 ===========
 Este comando crea un fichero iso de un sabor vitalinux desde los repositorios de migasfree.
 
-En migasfree una **ETIQUETA** es un **atributo** especial. A diferencia de un atributo migasfree estándar, la etiqueta nunca se ejecuta en el cliente migasfree, simplemente es un atributo asociado manualmente a un equipo.
+En migasfree una **ETIQUETA** es un **atributo** especial. A diferencia de un atributo normal, la etiqueta **nunca** se ejecuta en el cliente migasfree, simplemente es un atributo asociado manualmente a un equipo.
 
-Si ejecutas **migasfree-tags** sin argumentos, podrás ver todas las etiquetas que están disponibles en el servidor migasfree.
+Si se ejecuta **migasfree-tags** sin argumentos, podrás ver todas las etiquetas que están disponibles en el servidor migasfree.
 
 Estas etiquetas, asignadas convenientemente en los repositorios de migasfree, son las que nos permiten instalar/desintalar el conjunto de paquetes que determinan sabor vitalinux.
 
@@ -36,7 +36,7 @@ Si no tienes esta iso debes bajártela de internet. El comando te pedirá su ubi
 
 Despues de aprox. 1 hora (depende mucho del equipo en el que se ejecuta) tendrás la iso del sabor elegido.
 
-Esta iso tendrá los paquetes actualizados, y con la configuración que en migasfree hubiera en ese momento.
+Esta iso tendrá los paquetes actualizados con los repositorios y el estado que en migasfree hubiera en ese momento.
 
 
 COPYRIGHT
