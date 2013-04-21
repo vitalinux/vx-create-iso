@@ -39,7 +39,7 @@ apt-get --assume-yes --force-yes install vx-migasfree-client
 # ====================
 # ASSIGN COMPUTER TAGS
 # ====================
-migasfree-tags $MIGASFREE_TAGS
+migasfree-tags --silent $MIGASFREE_TAGS
 
 
 # ============
@@ -73,10 +73,10 @@ console output
 
 script
     # ASSING DEFAULT TAGS
-    migasfree-tags $MIGASFREE_TAGS
+    migasfree-tags --silent $MIGASFREE_TAGS
 
-	# UNINSTALL KERNELS
-	dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | xargs apt-get --assume-yes --force-yes purge
+    # UNINSTALL KERNELS
+    dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | xargs apt-get --assume-yes --force-yes purge
 
 end script
 
