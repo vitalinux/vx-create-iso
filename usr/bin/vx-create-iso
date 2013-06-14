@@ -39,7 +39,11 @@ apt-get --assume-yes --force-yes install vx-migasfree-client
 # ====================
 # ASSIGN COMPUTER TAGS
 # ====================
-migasfree-tags --silent $MIGASFREE_TAGS
+
+if [ -z $MIGASFREE_TAGS ] ; then
+  MIGASFREE_TAGS='""'
+fi
+migasfree-tags --set $MIGASFREE_TAGS
 
 
 # ============
@@ -59,7 +63,8 @@ apt-get --assume-yes --force-yes install $UBIQUITY_CUSTOM_PACKAGE
 # =====
 apt-get clean
 rm -rf /tmp/* || :
-rm -f /etc/hosts /etc/resolv.conf || :
+rm -f /etc/hosts
+rm -f /etc/resolvconf/resolv.conf.d/* || :
 
 
 # =========
@@ -186,8 +191,11 @@ fi
 customize_casper
 
 
-# Copy resolv.conf y hosts al DESTINO (custom/etc)
-cp /etc/resolv.conf /etc/hosts $_DEST/custom/etc/
+# Copy hosts al DESTINO (custom/etc)
+cp /etc/hosts $_DEST/custom/etc/
+
+# Copy resolv.conf.d al DESTINO (custom/etc)
+cp /etc/resolvconf/resolv.conf.d/* $_DEST/custom/etc/resolvconf/resolv.conf.d/
 
 # Create default sources.list
 rm $_DEST/custom/etc/apt/sources.list
