@@ -31,18 +31,14 @@ apt-get --assume-yes --force-yes purge $_REMOVE
 
 
 # ===========================
-# INSTALL VX-MIGASFREE-CLIENT
+# INSTALL CUSTOM-MIGASFREE-CLIENT
 # ===========================
-apt-get --assume-yes --force-yes install vx-migasfree-client
+apt-get --assume-yes --force-yes install $MIGASFREE_CUSTOM_PACKAGE
 
 
 # ====================
 # ASSIGN COMPUTER TAGS
 # ====================
-
-if [ -z $MIGASFREE_TAGS ] ; then
-  MIGASFREE_TAGS='""'
-fi
 migasfree-tags --set $MIGASFREE_TAGS
 
 
@@ -51,6 +47,8 @@ migasfree-tags --set $MIGASFREE_TAGS
 # ============
 migasfree -u
 
+# Auto_Update_Packages is False 
+# apt-get --assume-yes --force-yes dist-upgrade
 
 # ==================
 # CUSTOMIZE UBIQUITY
@@ -78,7 +76,7 @@ console output
 
 script
     # ASSING DEFAULT TAGS
-    migasfree-tags --silent $MIGASFREE_TAGS
+    migasfree-tags --set $MIGASFREE_TAGS
 
     # UNINSTALL KERNELS
     dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | xargs apt-get --assume-yes --force-yes purge
@@ -158,6 +156,10 @@ fi
 
 # READ CONFIGURATION
 . /etc/vx-create-iso.conf
+
+if [ -z "$MIGASFREE_TAGS" ] ; then
+  MIGASFREE_TAGS='""'
+fi
 
 _DIR="$( realpath $( dirname "${BASH_SOURCE[0]}" ))"
 _SRC=ubuntu-12.04-desktop-i386.iso
