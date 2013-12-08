@@ -1,3 +1,12 @@
+vx-create-iso (1.1-4) unstable; urgency=low
+
+  * Changed default configuration
+  * Changed iso name
+  * Reinstall casper
+  * Removed migasfree keys
+
+ -- Alberto Gacias <alberto@migasfree.org>  Sun, 08 Dec 2013 08:26:06 +0200
+
 vx-create-iso (1.0-4) unstable; urgency=low
 
   * adapt migasfree-tags sintax

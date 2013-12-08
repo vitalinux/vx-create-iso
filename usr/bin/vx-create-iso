@@ -6,11 +6,24 @@
 # Based in http://www.sindominio.net/suburbia/spip.php?article199
 
 
+function create_source_list(){
+    rm $_DEST/custom/etc/apt/sources.list
+    # we add universe
+    cat >> $_DEST/custom/etc/apt/sources.list<<EOF
+deb http://archive.ubuntu.com/ubuntu/ precise main restricted universe
+deb http://security.ubuntu.com/ubuntu/ precise-security main restricted universe
+deb http://archive.ubuntu.com/ubuntu/ precise-updates main restricted universe
+EOF
+}
+
 function chroot_script(){
     # Generate de script to run in chroot
     local _FILE=$_DEST/custom/$_SCRIPT
     echo $_FILE
-    cat >> $_FILE <<EOF
+
+    MIGASFREE_TAGS="$1"
+
+    cat > $_FILE <<EOF
 #!/bin/bash
 
 export HOME=/root
@@ -20,7 +33,7 @@ export LC_ALL=C
 # ===============================
 # RESYNCHRONIZE THE PACKAGE INDEX
 # ===============================
-apt-get update
+/usr/bin/apt-get update
 
 
 # ===================================
@@ -30,11 +43,32 @@ _REMOVE=`dpkg-query -W --showformat='${Package}\n' | grep language-pack | egrep 
 apt-get --assume-yes --force-yes purge $_REMOVE
 
 
-# ===========================
+# ===================
+# INSTALL LAST KERNEL
+# ===================
+apt-get --assume-yes --force-yes install linux-image linux-headers-generic-pae
+
+
+# =====================
+# UNINSTALL OLD KERNELS
+# =====================
+#dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | xargs apt-get --assume-yes --force-yes purge
+
+
+
+
+# ===============================
 # INSTALL CUSTOM-MIGASFREE-CLIENT
-# ===========================
+# ===============================
 apt-get --assume-yes --force-yes install $MIGASFREE_CUSTOM_PACKAGE
 
+
+# =================
+# REGISTER COMPUTER
+# =================
+#TODO: AÑADIR FORZAR Auto_Update_Packages
+sed -i 's/Auto_Update_Packages/#Auto_Update_Packages/g' /tmp/migasfree.conf
+migasfree -u 
 
 # ====================
 # ASSIGN COMPUTER TAGS
@@ -42,18 +76,27 @@ apt-get --assume-yes --force-yes install $MIGASFREE_CUSTOM_PACKAGE
 migasfree-tags --set $MIGASFREE_TAGS
 
 
-# ============
-# UPDATE
-# ============
-migasfree -u
-
-# Auto_Update_Packages is False 
-# apt-get --assume-yes --force-yes dist-upgrade
-
 # ==================
 # CUSTOMIZE UBIQUITY
 # ==================
 apt-get --assume-yes --force-yes install $UBIQUITY_CUSTOM_PACKAGE
+
+
+# ==========
+# FIRST-TAGS
+# ==========
+mkdir -p /var/tmp/migasfree
+echo $MIGASFREE_TAGS > /var/tmp/migasfree/first-tags.conf
+chmod 777 /var/tmp/migasfree
+chmod 666 /var/tmp/migasfree/first-tags.conf
+
+
+
+
+# ===================
+# AUTOREMOVE PACKAGES
+# ===================
+apt-get --assume-yes --force-yes autoremove
 
 
 # =====
@@ -61,37 +104,13 @@ apt-get --assume-yes --force-yes install $UBIQUITY_CUSTOM_PACKAGE
 # =====
 apt-get clean
 rm -rf /tmp/* || :
-rm -f /etc/hosts
+rm -f /etc/hosts || :
 rm -f /etc/resolvconf/resolv.conf.d/* || :
 
 
-# =========
-# FIRSTBOOT
-# =========
-cat >> /etc/init/firstboot.conf <<EOFFIRSTBOOT
-start on filesystem and net-device-up IFACE!=lo
-
-env USER=root
-console output
-
-script
-    # ASSING DEFAULT TAGS
-    migasfree-tags --set $MIGASFREE_TAGS
-
-    # UNINSTALL KERNELS
-    dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | xargs apt-get --assume-yes --force-yes purge
-
-end script
-
-post-stop script
-    rm /etc/init/firstboot.conf
-end script
-EOFFIRSTBOOT
-chmod 700 /etc/init/firstboot.conf
-
 EOF
 
-    chmod 700 $_FILE
+  chmod 700 $_FILE
 
 }
 
@@ -129,7 +148,6 @@ function customize_casper(){
     cd lztempdir
     lzma -dc -S .lz ../initrd.lz | cpio -imvd --no-absolute-filenames
 
-    rm lib/plymouth/themes/text.plymouth
     cp lib/plymouth/themes/ubuntu-text/ubuntu-text.plymouth lib/plymouth/themes/text.plymouth
 
     # Modify 'Ubuntu 12.04' string text.plymouth
@@ -157,12 +175,14 @@ fi
 # READ CONFIGURATION
 . /etc/vx-create-iso.conf
 
+_date=`date +"%y-%m-%d"`
+
 if [ -z "$MIGASFREE_TAGS" ] ; then
   MIGASFREE_TAGS='""'
 fi
 
 _DIR="$( realpath $( dirname "${BASH_SOURCE[0]}" ))"
-_SRC=ubuntu-12.04-desktop-i386.iso
+_SRC=ubuntu-12.04.3-desktop-i386.iso
 _DATE=`date +%Y%m%d`
 _DEST=/tmp/CD
 _TMP=/tmp/livecd
@@ -171,13 +191,14 @@ _SCRIPT=script_chroot.sh
 
 # To lower case and replace spaces
 _product=`echo "$PRODUCT" |sed -e 's/\(.*\)/\L\1/'| sed 's/ /-/g'`
-
+_version=`echo "$VERSION" |sed -e 's/\(.*\)/\L\1/'| sed 's/ /-/g'`
+_iso_name="$_product-$_version-$_date"
 
 
 # Check link to ubuntu iso
 _SRC=`ls $_SRC` || :
 if [ -z "$_SRC" ] ; then
-  _ISO=$(zenity --file-selection --title="Where is ubuntu-12.04-.iso file?" --file-filter=ubuntu*.iso --confirm-overwrite)
+  _ISO=$(zenity --file-selection --title="Where is ubuntu-12.04.3-desktop-i386.iso file?" --file-filter=ubuntu-12.04.3*.iso --confirm-overwrite)
   if ! [ -z "$_ISO" ] ; then
     _SRC=`basename $_ISO`
     ln -s $_ISO $_SRC
@@ -192,34 +213,22 @@ fi
 # Customize casper
 customize_casper
 
-
 # Copy hosts al DESTINO (custom/etc)
 cp /etc/hosts $_DEST/custom/etc/
 
 # Copy resolv.conf.d al DESTINO (custom/etc)
 cp /etc/resolvconf/resolv.conf.d/* $_DEST/custom/etc/resolvconf/resolv.conf.d/
 
+
+
 # Create default sources.list
-rm $_DEST/custom/etc/apt/sources.list
-cat >> $_DEST/custom/etc/apt/sources.list<<EOF
-deb http://es.archive.ubuntu.com/ubuntu/ precise main restricted
-deb http://security.ubuntu.com/ubuntu/ precise-security main restricted
-deb http://archive.ubuntu.com/ubuntu/ precise-updates main restricted
+create_source_list
 
-
-deb http://es.archive.ubuntu.com/ubuntu/ precise universe
-deb http://es.archive.ubuntu.com/ubuntu/ precise-security universe
-
-# This repository must not exist #FIXME
-deb http://es.archive.ubuntu.com/ubuntu/ precise multiverse
-
-EOF
-
-# Config initital repository
+# Config initial repository
 echo "deb http://$MIGASFREE_SERVER/repo/$MIGASFREE_VERSION/REPOSITORIES $MIGASFREE_REPO_BASE PKGS" > $_DEST/custom/etc/apt/sources.list.d/migasfree.list
 
 # Create chroot script
-chroot_script
+chroot_script "$MIGASFREE_TAGS"
 
 mount --bind /dev/ $_DEST/custom/dev
 mount --bind /proc $_DEST/custom/proc
@@ -229,6 +238,8 @@ mount --bind /dev/pts $_DEST/custom/dev/pts
 chroot $_DEST/custom /$_SCRIPT "$UBIQUITY_CUSTOM_PACKAGE $METAPACKAGE"
 chroot $_DEST/custom /usr/bin/migasfree -u
 
+#reinstall casper because do not run 'try buttom' in live cd.
+chroot $_DEST/custom apt-get --assume-yes --force-yes --reinstall install casper
 
 umount -lf $_DEST/custom/dev/pts
 umount -lf $_DEST/custom/sys
@@ -237,6 +248,10 @@ umount -lf $_DEST/custom/dev
 
 
 rm $_DEST/custom/$_SCRIPT
+
+# it is necessary remove migasfree keys
+rm $_DEST/custom/root/.migasfree-keys/* || :
+
 
 # Ubiquity preselect
 
@@ -309,24 +324,24 @@ mksquashfs $_DEST/custom $_DEST/cd/casper/filesystem.squashfs -processors 1
 
 
 # Create ISO
-if [ -f $_product.iso ] ; then
-  rm $_product.iso
+if [ -f $_iso_name.iso ] ; then
+  rm $_iso_name.iso
 fi
 rm $_DEST/cd/md5sum.txt
 cd $_DEST/cd
 
 _TARGET=`realpath $_DIR/$_SRC`
 _TARGET=`dirname $_TARGET`
-mkisofs -r -V "$_product" -b isolinux/isolinux.bin -c isolinux/boot.cat -cache-inodes -J -l -no-emul-boot -boot-load-size 4 -boot-info-table -o $_TARGET/$_product.iso .
+mkisofs -r -V "$_iso_name" -b isolinux/isolinux.bin -c isolinux/boot.cat -cache-inodes -J -l -no-emul-boot -boot-load-size 4 -boot-info-table -o $_TARGET/$_iso_name.iso .
 
 # Remove work directory
 rm -rf $_DEST
 
 echo
 echo
-if [ -f $_TARGET/$_product.iso ] ; then
-    echo "CREATED $_TARGET/$_product.iso"
-    ls -la $_TARGET/$_product.iso
+if [ -f $_TARGET/$_iso_name.iso ] ; then
+    echo "CREATED $_TARGET/$_iso_name.iso"
+    ls -la $_TARGET/$_iso_name.iso
 else
-    echo "ERROR: NOT CREATED $_TARGET/$_product.iso"
+    echo "ERROR: NOT CREATED $_TARGET/$_iso_name.iso"
 fi
