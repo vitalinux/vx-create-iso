@@ -10,10 +10,14 @@ function create_source_list(){
     rm $_DEST/custom/etc/apt/sources.list
     # we add universe
     cat >> $_DEST/custom/etc/apt/sources.list<<EOF
-deb http://archive.ubuntu.com/ubuntu/ precise main restricted universe
-deb http://security.ubuntu.com/ubuntu/ precise-security main restricted universe
-deb http://archive.ubuntu.com/ubuntu/ precise-updates main restricted universe
+deb http://softlibre.unizar.es/ubuntu/archive precise main restricted
+deb http://softlibre.unizar.es/ubuntu/archive precise-updates main restricted
+deb http://softlibre.unizar.es/ubuntu/archive precise universe
+deb http://softlibre.unizar.es/ubuntu/archive precise-updates universe
+deb http://softlibre.unizar.es/ubuntu/archive precise multiverse
+deb http://softlibre.unizar.es/ubuntu/archive precise-updates multiverse
 EOF
+
 }
 
 function chroot_script(){
@@ -55,8 +59,6 @@ apt-get --assume-yes --force-yes install linux-image linux-headers-generic-pae
 #dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | xargs apt-get --assume-yes --force-yes purge
 
 
-
-
 # ===============================
 # INSTALL CUSTOM-MIGASFREE-CLIENT
 # ===============================
@@ -68,7 +70,7 @@ apt-get --assume-yes --force-yes install $MIGASFREE_CUSTOM_PACKAGE
 # =================
 #TODO: AÑADIR FORZAR Auto_Update_Packages
 sed -i 's/Auto_Update_Packages/#Auto_Update_Packages/g' /tmp/migasfree.conf
-migasfree -u 
+migasfree -u
 
 # ====================
 # ASSIGN COMPUTER TAGS
@@ -196,9 +198,9 @@ _iso_name="$_product-$_version-$_date"
 
 
 # Check link to ubuntu iso
-_SRC=`ls $_SRC` || :
-if [ -z "$_SRC" ] ; then
-  _ISO=$(zenity --file-selection --title="Where is ubuntu-12.04.3-desktop-i386.iso file?" --file-filter=ubuntu-12.04.3*.iso --confirm-overwrite)
+_CHECK_SRC=`ls $_SRC` || :
+if [ -z "$_CHECK_SRC" ] ; then
+  _ISO=$(zenity --file-selection --title="Where is $_SRC file?" --file-filter=$_SRC --confirm-overwrite)
   if ! [ -z "$_ISO" ] ; then
     _SRC=`basename $_ISO`
     ln -s $_ISO $_SRC
@@ -225,7 +227,7 @@ cp /etc/resolvconf/resolv.conf.d/* $_DEST/custom/etc/resolvconf/resolv.conf.d/
 create_source_list
 
 # Config initial repository
-echo "deb http://$MIGASFREE_SERVER/repo/$MIGASFREE_VERSION/REPOSITORIES $MIGASFREE_REPO_BASE PKGS" > $_DEST/custom/etc/apt/sources.list.d/migasfree.list
+echo "deb http://$MIGASFREE_SERVER/repo/VX-BASE/REPOSITORIES BASE PKGS" > $_DEST/custom/etc/apt/sources.list.d/vx-base.list
 
 # Create chroot script
 chroot_script "$MIGASFREE_TAGS"
@@ -345,3 +347,4 @@ if [ -f $_TARGET/$_iso_name.iso ] ; then
 else
     echo "ERROR: NOT CREATED $_TARGET/$_iso_name.iso"
 fi
+
