@@ -1,3 +1,11 @@
+vx-create-iso (1.2-4) unstable; urgency=low
+
+  * Changed default version to VITALINUX
+  * changed sources.list to softlibre.unizar.es
+  * changed repo common to repository BASE in version VX-BASE in server vitalinux.unizar.es
+
+ -- Alberto Gacias <alberto@migasfree.org>  Wed, 25 Dec 2013 08:47:06 +0200
+
 vx-create-iso (1.1-4) unstable; urgency=low
 
   * Changed default configuration
