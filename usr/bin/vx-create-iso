@@ -342,6 +342,8 @@ rm -rf $_DEST
 echo
 echo
 if [ -f $_TARGET/$_iso_name.iso ] ; then
+    # Ponemos el iso en modo hibrido para poder arrancar el iso desde USB
+    isohybrid $_TARGET/$_iso_name.iso
     echo "CREATED $_TARGET/$_iso_name.iso"
     ls -la $_TARGET/$_iso_name.iso
 else
