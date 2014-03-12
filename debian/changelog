@@ -1,6 +1,7 @@
 vx-create-iso (1.5-1) unstable; urgency=low
 
-  * iso in mode hybrid
+  * Included packages for broadcom-43xx in /opt/pkgs
+  * Modify source iso: ubuntu-12.04.4-desktop-i386.iso
 
  -- Alberto Gacias <alberto@migasfree.org>  Wed, 12 Mar 2014 18:26:06 +0200
 
