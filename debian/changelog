@@ -1,3 +1,9 @@
+vx-create-iso (1.5-1) unstable; urgency=low
+
+  * iso in mode hybrid
+
+ -- Alberto Gacias <alberto@migasfree.org>  Wed, 12 Mar 2014 18:26:06 +0200
+
 vx-create-iso (1.4-1) unstable; urgency=low
 
   * iso in mode hybrid
