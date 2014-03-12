@@ -5,6 +5,17 @@
 # Based in https://help.ubuntu.com/community/LiveCDCustomization
 # Based in http://www.sindominio.net/suburbia/spip.php?article199
 
+function packages_extras(){
+    local _PWD=`pwd`
+    _PATH_EXTRAS="$_DEST/custom/opt/pkgs"
+
+    mkdir -p $_PATH_EXTRAS
+    cd $_PATH_EXTRAS
+    wget http://migasfree.vitalinux.org/repo/VX-BASE/STORES/base/vx-broadcom-43_1.0-1_all.deb
+    apt-get download b43-fwcutter
+    cd $_PWD
+
+}
 
 function create_source_list(){
     rm $_DEST/custom/etc/apt/sources.list
@@ -250,6 +261,8 @@ umount -lf $_DEST/custom/dev
 
 
 rm $_DEST/custom/$_SCRIPT
+
+packages_extras
 
 # it is necessary remove migasfree keys
 rm $_DEST/custom/root/.migasfree-keys/* || :
