@@ -195,7 +195,7 @@ if [ -z "$MIGASFREE_TAGS" ] ; then
 fi
 
 _DIR="$( realpath $( dirname "${BASH_SOURCE[0]}" ))"
-_SRC=ubuntu-12.04.3-desktop-i386.iso
+_SRC=ubuntu-12.04.4-desktop-i386.iso
 _DATE=`date +%Y%m%d`
 _DEST=/tmp/CD
 _TMP=/tmp/livecd
