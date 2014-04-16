@@ -51,6 +51,15 @@ export LC_ALL=C
 /usr/bin/apt-get update
 
 
+# =======================
+# REINSTALL dbus and cups
+# =======================
+apt-get update --assume-yes --reinstall install dbus
+service dbus restart
+apt-get update --assume-yes --reinstall install cups
+service cups restart
+
+
 # ===================================
 # REMOVE LANGUAGE-PACK EXCEPT en & es
 # ===================================
@@ -79,9 +88,7 @@ apt-get --assume-yes --force-yes install $MIGASFREE_CUSTOM_PACKAGE
 # =================
 # REGISTER COMPUTER
 # =================
-#TODO: AÑADIR FORZAR Auto_Update_Packages
-sed -i 's/Auto_Update_Packages/#Auto_Update_Packages/g' /tmp/migasfree.conf
-migasfree -u
+migasfree -u -a
 
 # ====================
 # ASSIGN COMPUTER TAGS
@@ -249,7 +256,7 @@ mount --bind /sys $_DEST/custom/sys
 mount --bind /dev/pts $_DEST/custom/dev/pts
 
 chroot $_DEST/custom /$_SCRIPT "$UBIQUITY_CUSTOM_PACKAGE $METAPACKAGE"
-chroot $_DEST/custom /usr/bin/migasfree -u
+chroot $_DEST/custom /usr/bin/migasfree -u -a
 
 #reinstall casper because do not run 'try buttom' in live cd.
 chroot $_DEST/custom apt-get --assume-yes --force-yes --reinstall install casper

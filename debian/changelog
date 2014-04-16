@@ -1,3 +1,10 @@
+vx-create-iso (1.6-1) unstable; urgency=low
+
+  * Added parameter -a to 'migasfree -u'' (force update)
+  * reinstall cups and dbus (this is necessary? I'm not sure)
+
+ -- Alberto Gacias <alberto@migasfree.org>  Wed, 16 Mar 2014 20:02:06 +0200
+
 vx-create-iso (1.5-1) unstable; urgency=low
 
   * Included packages for broadcom-43xx in /opt/pkgs
