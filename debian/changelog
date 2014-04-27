@@ -1,3 +1,9 @@
+vx-create-iso (1.7-1) unstable; urgency=low
+
+  * bugfix arch in b43-fwcutter (closes #4)
+
+ -- Alberto Gacias <alberto@migasfree.org>  Sun, 27 Apr 2014 10:16:06 +0200
+
 vx-create-iso (1.6-1) unstable; urgency=low
 
   * Added parameter -a to 'migasfree -u'' (force update)
