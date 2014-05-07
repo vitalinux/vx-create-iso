@@ -1,3 +1,9 @@
+vx-create-iso (1.8-1) unstable; urgency=low
+
+  * changed server in source.list (closes #5)
+
+ -- Alberto Gacias <alberto@migasfree.org>  Wed, 07 May 2014 20:41:06 +0200
+
 vx-create-iso (1.7-1) unstable; urgency=low
 
   * bugfix arch in b43-fwcutter (closes #4)

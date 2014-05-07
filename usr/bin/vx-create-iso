@@ -9,13 +9,15 @@
 function create_source_list(){
     rm $_DEST/custom/etc/apt/sources.list
     # we add universe
+    local _SRV=$1
     cat >> $_DEST/custom/etc/apt/sources.list<<EOF
-deb http://softlibre.unizar.es/ubuntu/archive precise main restricted
-deb http://softlibre.unizar.es/ubuntu/archive precise-updates main restricted
-deb http://softlibre.unizar.es/ubuntu/archive precise universe
-deb http://softlibre.unizar.es/ubuntu/archive precise-updates universe
-deb http://softlibre.unizar.es/ubuntu/archive precise multiverse
-deb http://softlibre.unizar.es/ubuntu/archive precise-updates multiverse
+deb $_SRV precise main restricted
+deb $_SRV precise-updates main restricted
+deb $_SRV precise universe
+deb $_SRV precise-updates universe
+deb $_SRV precise multiverse
+deb $_SRV precise-updates multiverse
+deb $_SRV precise-security restricted main multiverse universe
 EOF
 
 }
@@ -199,6 +201,9 @@ fi
 
 _DIR="$( realpath $( dirname "${BASH_SOURCE[0]}" ))"
 _SRC=ubuntu-12.04.4-desktop-i386.iso
+#_SERVER_SOURCE_LIST="http://softlibre.unizar.es/ubuntu/archive"
+_SERVER_SOURCE_LIST="http://archive.ubuntu.com/ubuntu"
+
 _DATE=`date +%Y%m%d`
 _DEST=/tmp/CD
 _TMP=/tmp/livecd
@@ -238,7 +243,7 @@ cp /etc/resolvconf/resolv.conf.d/* $_DEST/custom/etc/resolvconf/resolv.conf.d/
 
 
 # Create default sources.list
-create_source_list
+create_source_list $_SERVER_SOURCE_LIST
 
 # Config initial repository
 echo "deb http://$MIGASFREE_SERVER/repo/VX-BASE/REPOSITORIES BASE PKGS" > $_DEST/custom/etc/apt/sources.list.d/vx-base.list
@@ -264,8 +269,6 @@ umount -lf $_DEST/custom/dev
 
 
 rm $_DEST/custom/$_SCRIPT
-
-packages_extras
 
 # it is necessary remove migasfree keys
 rm $_DEST/custom/root/.migasfree-keys/* || :
