@@ -1,3 +1,11 @@
+vx-create-iso (1.9-1) unstable; urgency=low
+
+  * Use vx-repo-common and vx-repo-precise-ubuntu (close #6)
+  * Iso source ubuntu-12.04.5-desktop-i386.iso
+  * In ubiquity remove mirror repository to ubuntu.com (preseed)
+
+ -- Alberto Gacias <alberto@migasfree.org>  Wed, 07 May 2014 20:41:06 +0200
+
 vx-create-iso (1.8-1) unstable; urgency=low
 
   * changed server in source.list (closes #5)
