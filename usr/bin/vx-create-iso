@@ -6,6 +6,23 @@
 # Based in http://www.sindominio.net/suburbia/spip.php?article199
 
 
+CODENAME=xenial
+
+function create_source_list(){
+    rm $_DEST/custom/etc/apt/sources.list
+    # we add universe
+    local _SRV=$1
+    cat >> $_DEST/custom/etc/apt/sources.list<<EOF
+deb $_SRV $CODENAME main restricted
+deb $_SRV $CODENAME-updates main restricted
+deb $_SRV $CODENAME universe
+deb $_SRV $CODENAME-updates universe
+deb $_SRV $CODENAME multiverse
+deb $_SRV $CODENAME-updates multiverse
+deb $_SRV $CODENAME-security restricted main multiverse universe
+EOF
+}
+
 function chroot_script(){
     # Generate de script to run in chroot
     local _FILE=$_DEST/custom/$_SCRIPT
@@ -20,33 +37,31 @@ export HOME=/root
 export LC_ALL=C
 
 
-# ===========================
-# EMPTY /etc/apt/sources.list
-# ===========================
-echo "" > /etc/apt/sources.list
+# ===
+# DNS
+# ===
+echo "nameserver 8.8.8.8" | tee /etc/resolv.conf > /dev/null
 
 
-# =================
-# COMMON REPOSITORY
-# =================
-wget http://migasfree.vitalinux.org/repo/VX-BASE/STORES/base/vx-repo-common_1.2-1_all.deb
-dpkg -i vx-repo-common_1.2-1_all.deb
-rm vx-repo-common_1.2-1_all.deb
-/usr/bin/apt-get update
+# ===============================
+# GET KEY REPOSITORIES
+# ===============================
+wget -O - http://$MIGASFREE_SERVER/get_key_repositories | apt-key add -
 
 
-# =============
-# MIRROR UNIZAR
-# =============
-apt-get --assume-yes --force-yes install vx-repo-precise-unizar
+# ===============================
+# RESYNCHRONIZE THE PACKAGE INDEX
+# ===============================
+apt-get update
 
 
-# ==============
-# PRECISE FROZEN
-# ==============
-#apt-get --assume-yes --force-yes install vx-repo-precise-frozen
-
-/usr/bin/apt-get update
+# =======================
+# REINSTALL dbus and cups
+# =======================
+apt-get update --assume-yes --reinstall install dbus
+service dbus restart
+apt-get update --assume-yes --reinstall install cups
+service cups restart
 
 
 # ===================================
@@ -95,18 +110,10 @@ apt-get --assume-yes --force-yes install $UBIQUITY_CUSTOM_PACKAGE
 # FIRST-TAGS
 # ==========
 mkdir -p /var/tmp/migasfree
-echo $MIGASFREE_TAGS > /var/tmp/migasfree/first-tags.conf
+echo "$MIGASFREE_TAGS" > /var/tmp/migasfree/first-tags.conf
 chmod 777 /var/tmp/migasfree
 chmod 666 /var/tmp/migasfree/first-tags.conf
 
-
-# ===============
-# PACKAGES EXTRAS
-# ===============
-mkdir -p /opt/pkgs
-cd /opt/pkgs
-wget http://migasfree.vitalinux.org/repo/VX-BASE/STORES/base/vx-broadcom-43_1.0-1_all.deb
-apt-get download b43-fwcutter
 
 
 # ===================
@@ -119,6 +126,7 @@ apt-get --assume-yes --force-yes autoremove
 # CLEAN
 # =====
 apt-get clean
+rm -rf /var/cache/apt/archives/*
 rm -rf /tmp/* || :
 rm -f /etc/hosts || :
 rm -f /etc/resolvconf/resolv.conf.d/* || :
@@ -164,11 +172,11 @@ function customize_casper(){
     cd lztempdir
     lzma -dc -S .lz ../initrd.lz | cpio -imvd --no-absolute-filenames
 
-    cp lib/plymouth/themes/ubuntu-text/ubuntu-text.plymouth lib/plymouth/themes/text.plymouth
+    cp usr/share/plymouth/themes/ubuntu-text/ubuntu-text.plymouth usr/share/plymouth/themes/text.plymouth
 
-    # Modify 'Ubuntu 12.04' string text.plymouth
-    _STR="s/Ubuntu 12.04/$PRODUCT/g"
-    sed -i "$_STR" lib/plymouth/themes/text.plymouth
+    # Modify 'Ubuntu 16.04' string text.plymouth
+    _STR="s/Ubuntu 16.04/$PRODUCT/g"
+    sed -i "$_STR" usr/share/plymouth/themes/text.plymouth
 
     # Compress initrd.lz
     rm ../initrd.lz
@@ -198,7 +206,8 @@ if [ -z "$MIGASFREE_TAGS" ] ; then
 fi
 
 _DIR="$( realpath $( dirname "${BASH_SOURCE[0]}" ))"
-_SRC=ubuntu-12.04.5-desktop-i386.iso
+_SRC=ubuntu-16.04.3-desktop-amd64.iso
+_SERVER_SOURCE_LIST="http://archive.ubuntu.com/ubuntu"
 
 _DATE=`date +%Y%m%d`
 _DEST=/tmp/CD
@@ -237,6 +246,12 @@ cp /etc/hosts $_DEST/custom/etc/
 cp /etc/resolvconf/resolv.conf.d/* $_DEST/custom/etc/resolvconf/resolv.conf.d/
 
 
+# Create default sources.list
+create_source_list $_SERVER_SOURCE_LIST
+
+# Config initial repository
+echo "deb http://$MIGASFREE_SERVER/public/$MIGASFREE_VERSION/REPOSITORIES base PKGS" > $_DEST/custom/etc/apt/sources.list.d/migasfree.list
+
 # Create chroot script
 chroot_script "$MIGASFREE_TAGS"
 
@@ -260,20 +275,21 @@ umount -lf $_DEST/custom/dev
 rm $_DEST/custom/$_SCRIPT
 
 # it is necessary remove migasfree keys
-rm $_DEST/custom/root/.migasfree-keys/* || :
+rm -rf $_DEST/custom/var/migasfree-keys/* || :
+
 
 # Ubiquity preselect
 
 cat > $_DEST/cd/preseed/ubuntu.seed << EOF
 # Enable extras.ubuntu.com.
-#d-i apt-setup/extras    boolean true
+d-i apt-setup/extras    boolean true
 # Install the Ubuntu desktop.
 tasksel tasksel/first   multiselect ubuntu-desktop
 # On live DVDs, don't spend huge amounts of time removing substantial
 # application packages pulled in by language packs. Given that we clearly
 # have the space to include them on the DVD, they're useful and we might as
 # well keep them installed.
-#ubiquity    ubiquity/keep-installed string icedtea6-plugin openoffice.org
+ubiquity    ubiquity/keep-installed string icedtea6-plugin openoffice.org
 
 debconf debconf/language string es
 d-i debian-installer/locale string es_ES.UTF-8
@@ -295,62 +311,6 @@ ubiquity time/zone select Europe/Madrid
 
 console-setup console-setup/variant select Spain
 console-setup console-setup/layout select Spain
-
-
-
-# If you select ftp, the mirror/country string does not need to be set.
-#d-i mirror/protocol string ftp
-#d-i mirror/country string manual
-#d-i mirror/http/hostname string http.us.debian.org
-#d-i mirror/http/directory string /debian
-#d-i mirror/http/proxy string
-d-i mirror/country string manual
-d-i mirror/http/hostname string
-d-i mirror/http/directory string
-d-i mirror/http/proxy string
-
-
-# Suite to install.
-#d-i mirror/suite string testing
-# Suite to use for loading installer components (optional).
-#d-i mirror/udeb/suite string testing
-d-i mirror/suite string
-d-i mirror/udeb/suite string
-
-# You can choose to install non-free and contrib software.
-#d-i apt-setup/non-free boolean true
-#d-i apt-setup/contrib boolean true
-# Uncomment this if you don't want to use a network mirror.
-#d-i apt-setup/use_mirror boolean false
-# Select which update services to use; define the mirrors to be used.
-# Values shown below are the normal defaults.
-#d-i apt-setup/services-select multiselect security, updates
-#d-i apt-setup/security_host string security.debian.org
-
-d-i apt-setup/non-free boolean false
-d-i apt-setup/contrib boolean false
-d-i apt-setup/use_mirror boolean false
-d-i apt-setup/services-select multiselect
-d-i apt-setup/security_host string
-
-
-
-# Additional repositories, local[0-9] available
-#d-i apt-setup/local0/repository string \
-#       http://local.server/debian stable main
-#d-i apt-setup/local0/comment string local server
-# Enable deb-src lines
-#d-i apt-setup/local0/source boolean true
-# URL to the public key of the local repository; you must provide a key or
-# apt will complain about the unauthenticated repository and so the
-# sources.list line will be left commented out
-#d-i apt-setup/local0/key string http://local.server/key
-
-# By default the installer requires that repositories be authenticated
-# using a known gpg key. This setting can be used to disable that
-# authentication. Warning: Insecure, not recommended.
-#d-i debian-installer/allow_unauthenticated boolean true
-
 EOF
 
 
@@ -367,11 +327,11 @@ echo "$UBIQUITY_CUSTOM_PACKAGE" >> $_DEST/cd/casper/filesystem.manifest-remove
 
 # Isolinux read this file
 cat > $_DEST/cd/README.diskdefines << EOF
-#define DISKNAME  $PRODUCT - Release i386
+#define DISKNAME  $PRODUCT - Release amd64
 #define TYPE  binary
 #define TYPEbinary  1
-#define ARCH  i386
-#define ARCHi386  1
+#define ARCH  amd64
+#define ARCHamd64  1
 #define DISKNUM  1
 #define DISKNUM1  1
 #define TOTALNUM  0
@@ -381,7 +341,7 @@ EOF
 
 
 # Ubiquity read this file for buttoms "Try" an "Install"
-echo "$PRODUCT - Release i386 ($_DATE)" > $_DEST/cd/.disk/info
+echo "$PRODUCT - Release amd64 ($_DATE)" > $_DEST/cd/.disk/info
 
 
 # Create the squashfs file:
@@ -412,4 +372,3 @@ if [ -f $_TARGET/$_iso_name.iso ] ; then
 else
     echo "ERROR: NOT CREATED $_TARGET/$_iso_name.iso"
 fi
-
