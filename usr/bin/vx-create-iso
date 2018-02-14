@@ -271,15 +271,12 @@ umount -lf $_DEST/custom/sys
 umount -lf $_DEST/custom/proc
 umount -lf $_DEST/custom/dev
 
-
 rm $_DEST/custom/$_SCRIPT
 
 # it is necessary remove migasfree keys
-rm -rf $_DEST/custom/var/migasfree-keys/* || :
-
+rm -rf $_DEST/custom/var/migasfree-client/keys/* || :
 
 # Ubiquity preselect
-
 cat > $_DEST/cd/preseed/ubuntu.seed << EOF
 # Enable extras.ubuntu.com.
 d-i apt-setup/extras    boolean true
@@ -314,8 +311,6 @@ console-setup console-setup/layout select Spain
 EOF
 
 
-
-
 # Recreate the manifest files:
 chmod +w $_DEST/cd/casper/filesystem.manifest
 chroot $_DEST/custom dpkg-query -W --showformat='${Package} ${Version}\n' > $_DEST/cd/casper/filesystem.manifest
@@ -337,7 +332,6 @@ cat > $_DEST/cd/README.diskdefines << EOF
 #define TOTALNUM  0
 #define TOTALNUM0  1
 EOF
-
 
 
 # Ubiquity read this file for buttoms "Try" an "Install"
